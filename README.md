@@ -4,6 +4,11 @@ A self-hosted Hadith learning system that sends you **10 authentic hadith remind
 
 > Built by [Arsh Anwar](https://github.com/d4rk-lucif3r).  
 > May Allah make it a source of benefit for the Ummah. 🤲
+---
+
+## App Dashboard
+
+<img width="1866" height="1004" alt="image" src="https://github.com/user-attachments/assets/beb05a0c-aca7-435b-bf34-a8bab1e37831" />
 
 ---
 
