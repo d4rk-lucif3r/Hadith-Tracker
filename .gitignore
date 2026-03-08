@@ -1,0 +1,14 @@
+# Generated database files (too large for git, re-generated via download-books.sh)
+data/*.json
+!data/.gitkeep
+
+# Environment variables (contains secrets)
+.env
+
+# Node
+dashboard/node_modules/
+dashboard/dashboard.log
+dashboard/dashboard.pid
+
+# OS
+.DS_Store

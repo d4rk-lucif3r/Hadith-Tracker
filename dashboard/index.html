@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📿 Hadith Tracker</title>
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --card-hover: #1c2128;
+    --border: #30363d; --border-hover: #484f58;
+    --green: #3fb950; --gold: #d4a843; --blue: #58a6ff;
+    --text: #e6edf3; --muted: #8b949e; --purple: #bc8cff;
+    --red: #f85149; --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; }
+
+  .header { background: linear-gradient(135deg, #1a2332, #0d1117); border-bottom: 1px solid var(--border); padding: 20px 32px; display: flex; align-items: center; gap: 16px; }
+  .header h1 { font-size: 1.5rem; font-weight: 700; }
+  .header .sub { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+  .header-right { margin-left: auto; text-align: right; color: var(--muted); font-size: 0.8rem; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .stat-card .label { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .stat-card .value { font-size: 2rem; font-weight: 700; }
+  .stat-card .sub { color: var(--muted); font-size: 0.78rem; margin-top: 4px; }
+  .green .value { color: var(--green); } .gold .value { color: var(--gold); }
+  .blue .value { color: var(--blue); } .purple .value { color: var(--purple); }
+
+  /* Progress */
+  .progress-section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+  .progress-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; }
+  .progress-bar { background: #21262d; border-radius: 999px; height: 12px; overflow: hidden; }
+  .progress-fill { background: linear-gradient(90deg, var(--green), var(--gold)); height: 100%; border-radius: 999px; transition: width 0.8s ease; }
+
+  /* Books */
+  .section-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 12px; }
+  .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 28px; }
+  .book-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 15px; cursor: pointer; transition: all 0.15s; user-select: none; }
+  .book-card:hover { border-color: var(--blue); background: var(--card-hover); }
+  .book-card.selected { border-color: var(--blue); background: #1a2535; box-shadow: 0 0 0 1px var(--blue); }
+  .book-name { font-size: 0.83rem; font-weight: 600; color: var(--blue); margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .book-name .check { color: var(--green); display: none; }
+  .book-card.selected .check { display: inline; }
+  .book-bar { background: #21262d; border-radius: 999px; height: 5px; overflow: hidden; margin-bottom: 5px; }
+  .book-fill { background: var(--green); height: 100%; border-radius: 999px; }
+  .book-nums { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--muted); }
+
+  /* Toolbar */
+  .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tabs { display: flex; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; }
+  .tab { padding: 7px 18px; border-radius: 7px; cursor: pointer; font-size: 0.85rem; font-weight: 500; color: var(--muted); border: none; background: none; transition: all 0.15s; }
+  .tab.active { background: #21262d; color: var(--text); }
+  .tab:hover:not(.active) { color: var(--text); }
+  .search-box { flex: 1; min-width: 180px; max-width: 280px; background: var(--card); border: 1px solid var(--border); border-radius: 7px; padding: 8px 14px; color: var(--text); font-size: 0.875rem; outline: none; }
+  .search-box:focus { border-color: var(--blue); }
+  .filter-pill { background: #1a2535; border: 1px solid var(--blue); color: var(--blue); border-radius: 999px; padding: 5px 12px; font-size: 0.78rem; display: flex; align-items: center; gap: 6px; }
+  .filter-pill .x { cursor: pointer; opacity: 0.7; font-size: 1rem; line-height: 1; }
+  .filter-pill .x:hover { opacity: 1; }
+  .count-badge { margin-left: auto; color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+
+  /* Hadith cards */
+  .hadith-list { display: flex; flex-direction: column; gap: 8px; }
+  .hadith-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.15s; }
+  .hadith-card:hover { border-color: var(--border-hover); }
+  .hadith-card.expanded { border-color: var(--blue); }
+
+  /* Summary row — click to expand */
+  .hadith-summary { padding: 13px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; user-select: none; transition: background 0.1s; }
+  .hadith-summary:hover { background: var(--card-hover); }
+  .h-num { color: var(--muted); font-size: 0.7rem; font-weight: 600; min-width: 28px; flex-shrink: 0; }
+  .book-tag { font-size: 0.68rem; font-weight: 700; padding: 3px 7px; border-radius: 5px; white-space: nowrap; flex-shrink: 0; }
+  .book-tag.l { background: #1a2d1a; color: var(--green); }
+  .book-tag.r { background: #21262d; color: var(--blue); }
+  .h-id { color: var(--gold); font-size: 0.7rem; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+  .h-preview { color: var(--muted); font-size: 0.82rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .expand-chevron { color: var(--muted); font-size: 0.7rem; transition: transform 0.2s; flex-shrink: 0; margin-left: 4px; }
+  .hadith-card.expanded .expand-chevron { transform: rotate(180deg); }
+
+  /* Expanded body */
+  .hadith-body { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); animation: fadeIn 0.15s ease; }
+  .hadith-card.expanded .hadith-body { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+  .h-narrator { color: var(--purple); font-size: 0.8rem; font-style: italic; margin: 13px 0 10px; }
+  .h-text { color: var(--text); font-size: 0.9rem; line-height: 1.78; white-space: pre-wrap; word-break: break-word; }
+  .h-arabic { color: #a0aab4; font-size: 0.95rem; line-height: 2.1; margin-top: 14px; text-align: right; direction: rtl; font-family: 'Amiri', 'Arial', serif; border-top: 1px solid var(--border); padding-top: 12px; }
+
+  /* Mark button */
+  .mark-row { display: flex; justify-content: flex-end; margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+  .mark-btn { padding: 7px 16px; border-radius: 7px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: 1px solid; transition: all 0.15s; }
+  .mark-btn.mark-learned { background: #1a2d1a; border-color: var(--green); color: var(--green); }
+  .mark-btn.mark-learned:hover { background: #223d22; }
+  .mark-btn.mark-unlearned { background: #2d1a1a; border-color: var(--red); color: var(--red); }
+  .mark-btn.mark-unlearned:hover { background: #3d2222; }
+  .mark-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Toast */
+  #toast { position: fixed; bottom: 24px; right: 24px; background: #21262d; border: 1px solid var(--border); border-radius: 8px; padding: 10px 18px; font-size: 0.85rem; color: var(--text); opacity: 0; transform: translateY(8px); transition: all 0.25s; pointer-events: none; z-index: 999; }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  /* Pagination */
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 24px; flex-wrap: wrap; }
+  .page-btn { background: var(--card); border: 1px solid var(--border); border-radius: 7px; padding: 7px 13px; color: var(--text); cursor: pointer; font-size: 0.83rem; transition: all 0.15s; }
+  .page-btn:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+  .page-btn.active { background: var(--blue); border-color: var(--blue); color: #000; font-weight: 700; }
+  .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .page-info { color: var(--muted); font-size: 0.8rem; }
+
+  .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty .icon { font-size: 3rem; margin-bottom: 12px; }
+  .loading { text-align: center; padding: 40px; color: var(--muted); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { display: inline-block; width: 22px; height: 22px; border: 2px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div class="header">
+  <span style="font-size:2rem">📿</span>
+  <div>
+    <h1>Hadith Tracker</h1>
+    <div class="sub">Your journey through the Sunnah of the Prophet ﷺ</div>
+  </div>
+  <div class="header-right" id="lastSent">Loading…</div>
+</div>
+
+<div class="container">
+
+  <div class="stats-grid">
+    <div class="stat-card green"><div class="label">Learned</div><div class="value" id="sLearned">—</div><div class="sub">hadiths</div></div>
+    <div class="stat-card gold"><div class="label">Remaining</div><div class="value" id="sRemaining">—</div><div class="sub">to go</div></div>
+    <div class="stat-card blue"><div class="label">Total</div><div class="value" id="sTotal">—</div><div class="sub">in database</div></div>
+    <div class="stat-card purple"><div class="label">At 10/day</div><div class="value" id="sDays">—</div><div class="sub">days remaining</div></div>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-header">
+      <span>📊 Overall Progress</span>
+      <span id="pct" style="color:var(--green);font-weight:700">0.00%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="section-label">📚 By Book — click to filter</div>
+  <div class="books-grid" id="booksGrid"></div>
+
+  <div class="toolbar">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('learned')">✅ Learned</button>
+      <button class="tab" onclick="switchTab('remaining')">🔜 Remaining</button>
+    </div>
+    <input class="search-box" id="searchBox" type="text" placeholder="Search hadiths…" oninput="onSearch()" />
+    <div id="filterPill" style="display:none" class="filter-pill">
+      <span id="filterLabel"></span>
+      <span class="x" onclick="clearFilter()">✕</span>
+    </div>
+    <span class="count-badge" id="countBadge"></span>
+  </div>
+
+  <div class="hadith-list" id="hadithList">
+    <div class="loading"><div class="spinner"></div><br>Loading hadiths…</div>
+  </div>
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<script>
+let currentTab = 'learned', currentPage = 1, currentSearch = '', currentBook = '';
+let searchTimer = null, pendingMark = new Set();
+
+// ── Stats ──────────────────────────────────────────────
+async function loadStats() {
+  const s = await fetch('/api/stats').then(r => r.json());
+  document.getElementById('sLearned').textContent    = s.learned.toLocaleString();
+  document.getElementById('sRemaining').textContent  = s.remaining.toLocaleString();
+  document.getElementById('sTotal').textContent      = s.total.toLocaleString();
+  document.getElementById('sDays').textContent       = s.daysAt10.toLocaleString();
+  document.getElementById('pct').textContent         = s.pct + '%';
+  document.getElementById('progressFill').style.width = Math.max(parseFloat(s.pct), 0.1) + '%';
+
+  document.getElementById('lastSent').textContent = s.lastSentAt
+    ? 'Last: ' + new Date(s.lastSentAt).toLocaleString('en-IN', {timeZone:'Asia/Kolkata', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) + ' IST'
+    : 'No reminders sent yet';
+
+  // Book cards
+  const grid = document.getElementById('booksGrid');
+  grid.innerHTML = '';
+  for (const [name, b] of Object.entries(s.bookStats)) {
+    const pct = b.total > 0 ? ((b.learned / b.total) * 100).toFixed(1) : 0;
+    const sel = currentBook === name;
+    const d = document.createElement('div');
+    d.className = 'book-card' + (sel ? ' selected' : '');
+    d.innerHTML = `<div class="book-name"><span>${b.short||name}</span><span class="check">✓</span></div>
+      <div class="book-bar"><div class="book-fill" style="width:${pct}%"></div></div>
+      <div class="book-nums"><span>${b.learned.toLocaleString()} learned</span><span>${b.total.toLocaleString()} total</span></div>`;
+    d.onclick = () => selectBook(name, b.short || name);
+    grid.appendChild(d);
+  }
+}
+
+// ── Book filter ────────────────────────────────────────
+function selectBook(name, short) {
+  if (currentBook === name) { clearFilter(); return; }
+  currentBook = name; currentPage = 1;
+  document.getElementById('filterPill').style.display = 'flex';
+  document.getElementById('filterLabel').textContent = '📖 ' + short;
+  document.querySelectorAll('.book-card').forEach(c =>
+    c.classList.toggle('selected', c.querySelector('.book-name span').textContent === short));
+  loadHadiths();
+}
+function clearFilter() {
+  currentBook = ''; currentPage = 1;
+  document.getElementById('filterPill').style.display = 'none';
+  document.querySelectorAll('.book-card').forEach(c => c.classList.remove('selected'));
+  loadHadiths();
+}
+
+// ── Load hadiths ───────────────────────────────────────
+async function loadHadiths() {
+  document.getElementById('hadithList').innerHTML = '<div class="loading"><div class="spinner"></div><br>Loading…</div>';
+  const params = new URLSearchParams({ page: currentPage, limit: 20,
+    ...(currentSearch && { search: currentSearch }),
+    ...(currentBook   && { book: currentBook }) });
+  const data = await fetch(`/api/${currentTab}?${params}`).then(r => r.json());
+
+  document.getElementById('countBadge').textContent = data.total.toLocaleString() + ' hadiths';
+
+  if (!data.data.length) {
+    document.getElementById('hadithList').innerHTML = `<div class="empty">
+      <div class="icon">${currentTab==='learned'?'📭':'🎉'}</div>
+      <div>${currentTab==='learned'?'No hadiths learned yet — first reminder coming soon!':'MashaAllah, all learned!'}</div></div>`;
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  const isL = currentTab === 'learned';
+  document.getElementById('hadithList').innerHTML = data.data.map((h, i) => {
+    const num = (currentPage-1)*20 + i + 1;
+    const preview = h.text.replace(/\s+/g,' ').slice(0, 110) + (h.text.length > 110 ? '…' : '');
+    return `
+    <div class="hadith-card" id="hc${h.gid}">
+      <div class="hadith-summary" onclick="toggleCard(${h.gid})">
+        <span class="h-num">${num}</span>
+        <span class="book-tag ${isL?'l':'r'}">${h.short||h.book}</span>
+        <span class="h-id">Hadith #${h.id}</span>
+        <span class="h-preview">${escHtml(preview)}</span>
+        <span class="expand-chevron">▼</span>
+      </div>
+      <div class="hadith-body">
+        ${h.narrator ? `<div class="h-narrator">📜 ${escHtml(h.narrator)}</div>` : ''}
+        <div class="h-text">${escHtml(h.text)}</div>
+        ${h.arabic ? `<div class="h-arabic">${escHtml(h.arabic)}</div>` : ''}
+        <div class="mark-row">
+          <button id="mbtn${h.gid}" class="mark-btn ${isL?'mark-unlearned':'mark-learned'}"
+            onclick="markHadith(event, ${h.gid}, ${isL?'false':'true'})">
+            ${isL ? '✕ Mark as Unlearned' : '✓ Mark as Learned'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  renderPagination(data.page, data.pages);
+}
+
+// ── Toggle expand ──────────────────────────────────────
+function toggleCard(gid) {
+  const card = document.getElementById('hc' + gid);
+  card.classList.toggle('expanded');
+}
+
+// ── Mark learned / unlearned ───────────────────────────
+async function markHadith(e, gid, learned) {
+  e.stopPropagation();
+  if (pendingMark.has(gid)) return;
+  const btn = document.getElementById('mbtn' + gid);
+  pendingMark.add(gid);
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    const res = await fetch('/api/mark', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gid, learned })
+    });
+    if (!res.ok) throw new Error();
+    toast(learned ? '✅ Marked as learned' : '↩️ Marked as unlearned');
+    // Remove card from current list with animation
+    const card = document.getElementById('hc' + gid);
+    card.style.transition = 'opacity 0.3s, transform 0.3s';
+    card.style.opacity = '0'; card.style.transform = 'scale(0.97)';
+    setTimeout(() => { loadHadiths(); loadStats(); }, 300);
+  } catch {
+    toast('❌ Error saving');
+    btn.disabled = false;
+    btn.textContent = learned ? '✓ Mark as Learned' : '✕ Mark as Unlearned';
+  }
+  pendingMark.delete(gid);
+}
+
+// ── Helpers ────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg, ms=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), ms);
+}
+
+function renderPagination(page, pages) {
+  const p = document.getElementById('pagination');
+  if (pages <= 1) { p.innerHTML = ''; return; }
+  let h = `<button class="page-btn" onclick="goPage(${page-1})" ${page===1?'disabled':''}>← Prev</button>`;
+  const range = [];
+  if (pages <= 7) for(let i=1;i<=pages;i++) range.push(i);
+  else {
+    range.push(1);
+    if (page > 3) range.push('…');
+    for(let i=Math.max(2,page-1);i<=Math.min(pages-1,page+1);i++) range.push(i);
+    if (page < pages-2) range.push('…');
+    range.push(pages);
+  }
+  for (const r of range) {
+    if (r==='…') h += `<span class="page-info">…</span>`;
+    else h += `<button class="page-btn ${r===page?'active':''}" onclick="goPage(${r})">${r}</button>`;
+  }
+  h += `<button class="page-btn" onclick="goPage(${page+1})" ${page===pages?'disabled':''}>Next →</button>`;
+  h += `<span class="page-info">Page ${page} of ${pages.toLocaleString()}</span>`;
+  p.innerHTML = h;
+}
+
+function goPage(p) {
+  currentPage = p; loadHadiths();
+  window.scrollTo({ top: document.querySelector('.toolbar').offsetTop - 16, behavior: 'smooth' });
+}
+
+function switchTab(tab) {
+  currentTab = tab; currentPage = 1; currentSearch = '';
+  document.getElementById('searchBox').value = '';
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===(tab==='learned'?0:1)));
+  loadHadiths();
+}
+
+function onSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { currentSearch = document.getElementById('searchBox').value; currentPage = 1; loadHadiths(); }, 400);
+}
+
+loadStats();
+loadHadiths();
+setInterval(loadStats, 30000);
+</script>
+</body>
+</html>
