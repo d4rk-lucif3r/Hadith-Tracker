@@ -54,7 +54,7 @@ A self-hosted Hadith learning system that sends you **10 authentic hadith remind
 - **Node.js** v18+ — [nodejs.org](https://nodejs.org)
 - **Telegram Bot** — create one via [@BotFather](https://t.me/BotFather) and get your bot token
 - Your **Telegram Chat ID** — send any message to your bot, then visit `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates` to find your `chat_id`
-- A Linux/macOS machine (VPS, Raspberry Pi, local server, etc.) — ideally always-on
+- A Linux/macOS/Windows machine (VPS, Raspberry Pi, local server, etc.) — ideally always-on
 
 ---
 
@@ -77,7 +77,7 @@ Edit `.env` and fill in your values:
 
 ```env
 TELEGRAM_BOT_TOKEN=123456789:ABCdefGhIJKlmNoPQRsTUVwxYZ
-TELEGRAM_CHAT_ID=526773531
+TELEGRAM_CHAT_ID=12673613
 DB_DIR=/absolute/path/to/Hadith-Tracker/data
 TZ=America/New_York
 ```
@@ -124,20 +124,26 @@ Dashboard runs at `http://localhost:7777` by default.
 
 ### 6. Set up daily reminders
 
+**Linux / macOS:**
 ```bash
 bash scripts/setup-cron.sh
 ```
 
-This installs 10 daily cron jobs that fire throughout the day:
+**Windows (PowerShell as Administrator):**
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\setup-cron-windows.ps1
+```
+
+This installs 10 daily scheduled jobs that fire throughout the day:
 
 🌅 6 AM · ☀️ 8 AM · 🌤️ 10 AM · 🕛 12 PM · 🌞 2 PM · 🌇 4 PM · 🌆 6 PM · 🌃 8 PM · 🌙 9:30 PM · ⭐ 11 PM
 
 > Times are in the timezone you set in `TZ`. Make sure your system timezone matches:
-> ```bash
-> sudo timedatectl set-timezone America/New_York   # Linux
-> ```
+> - **Linux:** `sudo timedatectl set-timezone America/New_York`
+> - **macOS:** System Settings → General → Date & Time → Time Zone
+> - **Windows:** Settings → Time & Language → Date & Time → Time zone
 
-Each cron job calls `hadith-reminder.sh`, which picks the next hadith, formats it, and sends it directly to your Telegram via the Bot API — no third-party services required.
+Each job calls the reminder script, which picks the next hadith, formats it, and sends it directly to your Telegram via the Bot API — no third-party services required.
 
 ---
 
